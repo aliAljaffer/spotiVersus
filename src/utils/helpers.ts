@@ -1,8 +1,8 @@
-import { TArtist } from "../types/TArtist";
+import { TableRow, TArtist } from "../types/TArtist";
 
 export const DB_START = 10001;
 export const DB_END = 14000;
-export const NUM_ARTISTS_TO_FETCH = 2500;
+export const NUM_ARTISTS_TO_FETCH = 1000;
 export const getRandomId = (
   start: number = DB_START,
   end: number = DB_END,
@@ -23,7 +23,7 @@ type Data = {
   artist_id: string;
 };
 
-export const dataToArtist = (data: Data): TArtist => {
+export const dataToArtist = (data: Data | TableRow): TArtist => {
   const newArtist: TArtist = {
     name: data?.artist,
     country: data?.country,
@@ -35,7 +35,5 @@ export const dataToArtist = (data: Data): TArtist => {
 };
 
 export const formatNumber = (number: number): string => {
-  return Intl.NumberFormat("en-UK", { maximumSignificantDigits: 3 }).format(
-    number
-  );
+  return Intl.NumberFormat("en-UK").format(number);
 };

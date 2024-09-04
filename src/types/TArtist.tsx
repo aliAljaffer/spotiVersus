@@ -1,3 +1,5 @@
+import { Database } from "./supabase";
+
 export type TArtist = {
   name: string;
   listeners: number;
@@ -16,3 +18,7 @@ export type TableRow = {
   country: string;
   listeners: number;
 };
+
+export type TRow =
+  | TableRow
+  | Database["public"]["Tables"]["monthly_listeners"]["Row"];

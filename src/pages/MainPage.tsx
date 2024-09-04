@@ -1,5 +1,3 @@
-import { ReactElement } from "react";
-
 export default function MainPage({ children, className = "" }) {
   return (
     <div

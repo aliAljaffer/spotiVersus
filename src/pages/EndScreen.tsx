@@ -48,10 +48,12 @@ export default function EndScreen() {
             <a
               className="cursor-pointer hover:text-yellow-600 transition-all duration-300 "
               href={baseSpotifyUrl + firstId}
+              target="_blank"
             >
               {firstArtist}
             </a>
             <a
+              target="_blank"
               className="transition-all duration-300  cursor-pointer hover:text-yellow-600"
               href={baseSpotifyUrl + secondId}
             >
