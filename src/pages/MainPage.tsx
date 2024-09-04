@@ -1,8 +1,10 @@
-import { PropsWithChildren } from "react";
+import { ReactElement } from "react";
 
-export default function MainPage({ children }: PropsWithChildren) {
+export default function MainPage({ children, className = "" }) {
   return (
-    <div className="flex w-full flex-col gap-4 justify-center items-center h-screen">
+    <div
+      className={`${className} flex w-full flex-col gap-4 justify-center items-center h-screen`}
+    >
       {children}
     </div>
   );

@@ -1,102 +1,106 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Artist from "../components/Artist";
 import { TArtist } from "../types/TArtist";
-import { createClient } from "@supabase/supabase-js";
-const supabaseUrl = "https://hseaihljqoilgnsuanse.supabase.co";
-const supabaseKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzZWFpaGxqcW9pbGduc3VhbnNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjUwOTc5MzcsImV4cCI6MjA0MDY3MzkzN30.yBz9_o35KNbm0xblNeFI_q_w4uthsBom4UHMfA8d8Pc";
-const supabase = createClient(supabaseUrl, supabaseKey);
-if (!supabase) throw new Error("Couldn't retrieve supabase client");
-// const artistBaseUrl = "";
+import useArtist from "../hooks/useArtist";
+import {
+  getRandomId,
+  dataToArtist,
+  NUM_ARTISTS_TO_FETCH,
+} from "../utils/helpers";
+import { Navigate } from "react-router-dom";
+import Error from "../components/Error";
+import { Loading } from "../components/Loading";
 
-const DB_START = 10001;
-const DB_END = 14000;
-function shuffleArray(array: TArtist[]): void {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-}
 export default function Game() {
-  const [topArtist, setTopArtist] = useState<TArtist>();
-  const [bottomArtist, setBottomArtist] = useState<TArtist>();
-  const [isLoading, setIsLoading] = useState(false);
-  const excludedArtists = useRef<string[]>([]);
-  const getOneArtist = async (exclusions: string[]) => {
-    const randomNumber = Math.floor(
-      Math.random() * (DB_END - DB_START + 1) + DB_START
-    );
-    setIsLoading(true);
-    const { data, error } = await supabase
-      .from("monthly_listeners")
-      .select("*")
-      .eq("id", randomNumber);
+  const [isPlayerWinning, setIsPlayerWinning] = useState<boolean>(true);
+  const choseFirst = useRef<boolean>(false);
+  const score = useRef<number>(0);
+  const exclusions = useRef<number[]>([]);
+  const midPoint = Math.floor(NUM_ARTISTS_TO_FETCH / 2);
+  const [firstId, setFirstId] = useState<number>(
+    getRandomId(0, midPoint - 1, exclusions.current)
+  );
+  const [secondId, setSecondId] = useState<number>(
+    getRandomId(midPoint, midPoint * 2, exclusions.current)
+  );
+  const { artists, isError, isLoading } = useArtist(exclusions.current);
+  const arrLength = artists !== undefined ? artists.length : midPoint;
+  const firstArtist =
+    firstId === -1 ? undefined : dataToArtist(artists?.at(firstId % arrLength));
+  const secondArtist =
+    secondId === -1
+      ? undefined
+      : dataToArtist(artists?.at(secondId % arrLength));
 
-    if (error !== null) throw new Error("Couldn't fetch an artist.");
+  if (
+    (secondArtist?.name === firstArtist?.name ||
+      secondArtist?.listeners === firstArtist?.listeners) &&
+    score.current > 0
+  )
+    return <Navigate to={`/winscreen?score=${score.current}`} />;
 
-    const found = exclusions.includes(data[0].artist);
-    if (found) getOneArtist(exclusions);
-
-    const newArtist: TArtist = {
-      name: data[0].artist,
-      country: data[0].country,
-      image: data[0].pic,
-      listeners: data[0].listeners,
-      spotifyId: data[0].artist_id,
-    };
-    setIsLoading(false);
-    return newArtist;
+  const getWinner = (): TArtist => {
+    if (!firstArtist || !secondArtist)
+      return {
+        name: "Invalid",
+        image: "",
+        spotifyId: "",
+        country: "SA",
+        listeners: 0,
+      };
+    return firstArtist.listeners > secondArtist.listeners
+      ? firstArtist
+      : secondArtist;
   };
-  const getTwoArtists = (): Promise<TArtist>[] => {
-    const first = getOneArtist(excludedArtists.current);
-    const second = getOneArtist(excludedArtists.current);
-    return [first, second];
-  };
 
-  function findWinner(): 1 | 2 | -1 {
-    if (topArtist === undefined || bottomArtist === undefined) return -1;
-    const winner = topArtist.listeners > bottomArtist.listeners ? 1 : 2;
-    return winner;
-  }
-  // const winner = findWinner();
-  // if (winner === -1) throw new Error("Top or Bottom artist undefined.");
-  // const loser = winner === 1 ? 2 : 1;
-  // const memoizedCorrect = useMemo(() => (
-  //   <Artist
-  //     artist={winner === 1 ? topArtist : bottomArtist}
-  //     onClick={() => {}}
-  //   />
-  // ));
-
-  useEffect(function () {
-    async function getArtist() {
-      try {
-        setIsLoading(true);
-        const artists = getTwoArtists();
-        setTopArtist(await artists[0]);
-        setBottomArtist(await artists[1]);
-        console.log("s");
-      } catch {
-        throw new Error("Couldn't get one artist @ Artist");
-      } finally {
-        setIsLoading(false);
-      }
+  const handleUserChoice = (chosenArtist: TArtist, isTop: boolean): void => {
+    const winner = getWinner();
+    const setterToUse = isTop ? setFirstId : setSecondId;
+    choseFirst.current = chosenArtist.spotifyId === firstArtist?.spotifyId;
+    // Winning choice, switch artist that was chosen
+    if (winner.spotifyId === chosenArtist.spotifyId) {
+      console.log("Win");
+      score.current = score.current + 1;
+      setterToUse(getRandomId(0, midPoint - 1, exclusions.current));
+      return;
     }
-    getArtist();
-  }, []);
-  const loaded = topArtist && bottomArtist;
-  const arr = [topArtist, bottomArtist];
-  shuffleArray(arr);
+    console.log("Loss");
+    // Losing choice. Need to show end game screen and display score and artists listeners
+    setIsPlayerWinning(false);
+  };
+
+  if (isLoading) return <Loading />;
+  if (isError) return <Error reason="Data loading. Try again." />;
+  if (!artists) return;
+
+  exclusions.current.push(firstId);
+  exclusions.current.push(secondId);
+
+  if (!isPlayerWinning)
+    return (
+      <Navigate
+        to={`/endscreen?firstArtist=${firstArtist?.name}&firstListeners=${firstArtist?.listeners}&secondArtist=${secondArtist?.name}&secondListeners=${secondArtist?.listeners}&score=${score.current}&choseFirst=${choseFirst.current}&firstId=${firstArtist?.spotifyId}&secondId=${secondArtist?.spotifyId}`}
+      />
+    );
 
   return (
-    <div className="text-stone-800 bg-stone-100 h-screen flex justify-center items-center flex-col">
-      {isLoading ? (
-        <p>Loading...</p>
+    <div className="text-stone-800 bg-stone-100 h-screen flex justify-center items-center flex-col duration-300 transition-all">
+      {firstArtist === undefined ? (
+        <p>Loading artist...</p>
       ) : (
-        <>
-          <Artist artist={arr[0]} top={true} onClick={() => {}} />
-          <Artist artist={arr[1]} onClick={() => {}} />
-        </>
+        <Artist
+          artist={firstArtist}
+          top={true}
+          onClick={() => handleUserChoice(firstArtist, true)}
+        />
+      )}
+      {secondArtist === undefined ? (
+        <p>Loading artist...</p>
+      ) : (
+        <Artist
+          artist={secondArtist}
+          onClick={() => handleUserChoice(secondArtist, false)}
+        />
       )}
     </div>
   );
