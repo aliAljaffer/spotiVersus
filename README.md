@@ -1,20 +1,12 @@
-# spotiVersus
+# spotiVersus 🎶
 
 spotiVersus is a mini-game of guessing which of the two artists displayed has a higher number of monthly listeners on Spotify.
 
-## Technologies used
+## Technologies used 👨‍💻
 
-- Typescript
+Typescript, React, Vite, Tailwind, Supabase
 
-- React
-
-- Vite
-
-- Tailwind
-
-- Supabase
-
-## ToDos
+## ToDos 📝
 
 - Better image quality
 
