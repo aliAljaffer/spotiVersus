@@ -35,7 +35,7 @@ export const dataToArtist = (data: Data): TArtist => {
 };
 
 export const formatNumber = (number: number): string => {
-  return Intl.NumberFormat("en-UK", { maximumSignificantDigits: 3 }).format(
+  return Intl.NumberFormat("en-UK").format(
     number
   );
 };
